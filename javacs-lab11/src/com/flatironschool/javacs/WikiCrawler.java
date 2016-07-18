@@ -1,12 +1,12 @@
 package com.flatironschool.javacs;
 
 import java.io.IOException;
-import java.util.LinkedList;
-import java.util.Map;
+import java.net.URL;
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.Queue;
 
 import org.jsoup.nodes.Element;
+import org.jsoup.nodes.TextNode;
 import org.jsoup.select.Elements;
 
 import redis.clients.jedis.Jedis;
@@ -24,6 +24,10 @@ public class WikiCrawler {
 	
 	// fetcher used to get pages from Wikipedia
 	final static WikiFetcher wf = new WikiFetcher();
+
+	private Set<String> indexed = new HashSet<>();
+
+	private static final String BASE_URL = "https://en.wikipedia.org";
 
 	/**
 	 * Constructor.
@@ -55,7 +59,28 @@ public class WikiCrawler {
 	 */
 	public String crawl(boolean testing) throws IOException {
         // FILL THIS IN!
-		return null;
+		String url = queue.poll();
+		if (url == null) {
+			return null;
+		}
+		int queryString = url.indexOf('?');
+		int anchor = url.indexOf('#');
+		int min = queryString < anchor ? queryString : anchor;
+		if (min != -1) {
+			url = url.substring(0, min);
+		}
+		Elements paragraphs;
+		if (testing) {
+			paragraphs = wf.readWikipedia(url);
+			queueInternalLinks(paragraphs);
+		} else {
+			if (indexed.contains(url)) {
+				return null;
+			}
+			paragraphs = wf.fetchWikipedia(url);
+			queueAllLinks(paragraphs, url);
+		}
+		return url;
 	}
 	
 	/**
@@ -65,14 +90,47 @@ public class WikiCrawler {
 	 */
 	// NOTE: absence of access level modifier means package-level
 	void queueInternalLinks(Elements paragraphs) {
-        // FILL THIS IN!
+        index.indexPage(paragraphs);
+		addToQueue(paragraphs);
 	}
+
+	/**
+	 * Parses paragraphs and adds all links to the queue.
+	 *
+	 * @param paragraphs
+	 */
+	// NOTE: absence of access level modifier means package-level
+	void queueAllLinks(Elements paragraphs, String url) {
+		index.indexPage(url,paragraphs);
+		addToQueue(paragraphs);
+	}
+
+	private void addToQueue(Elements paragraphs) {
+
+		for (Element paragraph : paragraphs) {
+			Elements links = paragraph.getElementsByTag("a");
+			for (Element link : links) {
+				String url = link.attr("href");
+				if (url.startsWith("/")) {
+					url = BASE_URL + url;
+				} else if (url.startsWith("#")) {
+					continue;
+				}
+				queue.add(url);
+			}
+		}
+	}
+
 
 	public static void main(String[] args) throws IOException {
 		
 		// make a WikiCrawler
 		Jedis jedis = JedisMaker.make();
-		JedisIndex index = new JedisIndex(jedis); 
+		JedisIndex index = new JedisIndex(jedis);
+		index.deleteAllKeys();
+		index.deleteTermCounters();
+		index.deleteURLSets();
+
 		String source = "https://en.wikipedia.org/wiki/Java_(programming_language)";
 		WikiCrawler wc = new WikiCrawler(source, index);
 		
