@@ -159,21 +159,6 @@ public class JedisIndex {
 	}
 
 	/**
-	 * Add a page to the index.
-	 *
-	 * @param paragraphs  Collection of elements that should be indexed.
-	 */
-	public void indexPage(Elements paragraphs) {
-
-		// make a TermCounter and count the terms in the paragraphs
-		TermCounter tc = new TermCounter("test");
-		tc.processElements(paragraphs);
-
-		// push the contents of the TermCounter to Redis
-		pushTermCounterToRedis(tc);
-	}
-
-	/**
 	 * Pushes the contents of the TermCounter to Redis.
 	 * 
 	 * @param tc

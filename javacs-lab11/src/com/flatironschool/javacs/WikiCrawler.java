@@ -90,7 +90,6 @@ public class WikiCrawler {
 	 */
 	// NOTE: absence of access level modifier means package-level
 	void queueInternalLinks(Elements paragraphs) {
-        index.indexPage(paragraphs);
 		addToQueue(paragraphs);
 	}
 
@@ -106,17 +105,14 @@ public class WikiCrawler {
 	}
 
 	private void addToQueue(Elements paragraphs) {
-
 		for (Element paragraph : paragraphs) {
 			Elements links = paragraph.getElementsByTag("a");
 			for (Element link : links) {
 				String url = link.attr("href");
-				if (url.startsWith("/")) {
+				if (url.startsWith("/wiki")) {
 					url = BASE_URL + url;
-				} else if (url.startsWith("#")) {
-					continue;
+					queue.add(url);
 				}
-				queue.add(url);
 			}
 		}
 	}

@@ -34,6 +34,7 @@ public class WikiCrawlerTest {
 		// make a WikiCrawler
 		jedis = JedisMaker.make();
 		index = new JedisIndex(jedis);
+		index.deleteAllKeys();
 		String source = "https://en.wikipedia.org/wiki/Java_(programming_language)";
 		wc = new WikiCrawler(source, index);
 
