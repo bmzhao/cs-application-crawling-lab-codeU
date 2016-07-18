@@ -73,6 +73,7 @@ public class WikiCrawler {
 		if (testing) {
 			paragraphs = wf.readWikipedia(url);
 			queueInternalLinks(paragraphs);
+			index.indexPage(url,paragraphs);
 		} else {
 			if (indexed.contains(url)) {
 				return null;
